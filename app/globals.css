@@ -2,25 +2,44 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #181114;
+  --color-text-rose-soft: #99898e;
+  --color-text-rose-accent: #8e4b63;
+  --shadow-rose-light: rgba(188, 144, 139, 0.12);
+
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-cormorant);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at top, rgba(248, 226, 219, 0.55), transparent 32%),
+    radial-gradient(circle at 20% 20%, rgba(244, 209, 213, 0.45), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #fdf7f4 52%, #fcf4f0 100%);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(172, 99, 124, 0.18);
 }
