@@ -14,8 +14,9 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Bellatech | Acesso Gerencial",
-  description: "Area gerencial da Bellatech com acesso exclusivo por computador.",
+  title: "Bellatech | Area Administrativa",
+  description:
+    "Area administrativa da Bellatech com login e cadastro inicial em ambiente de escritorio.",
 };
 
 export default function RootLayout({

@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointment_people {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointment_id String       @db.Uuid
+  person_name    String       @db.VarChar(255)
+  person_type    String       @default("CLIENT") @db.VarChar(20)
+  created_at     DateTime?    @default(now()) @db.Timestamp(6)
+  appointments   appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointment_services {
+  appointment_id              String       @db.Uuid
+  service_id                  String       @db.Uuid
+  price_at_booking            Decimal      @db.Decimal(10, 2)
+  duration_minutes_at_booking Int
+  created_at                  DateTime?    @default(now()) @db.Timestamp(6)
+  appointments                appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services                    services     @relation(fields: [service_id], references: [id], onUpdate: NoAction)
+
+  @@id([appointment_id, service_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointments {
+  id                                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishment_id                      String                   @db.Uuid
+  client_id                             String                   @db.Uuid
+  employee_id                           String                   @db.Uuid
+  scheduled_start                       DateTime                 @db.Timestamp(6)
+  scheduled_end                         DateTime                 @db.Timestamp(6)
+  status                                String                   @default("CONFIRMANDO") @db.VarChar(20)
+  total_price                           Decimal                  @default(0) @db.Decimal(10, 2)
+  payment_status                        String                   @default("PENDENTE") @db.VarChar(20)
+  notes                                 String?
+  created_at                            DateTime?                @default(now()) @db.Timestamp(6)
+  appointment_people                    appointment_people[]
+  appointment_services                  appointment_services[]
+  users_appointments_client_idTousers   users                    @relation("appointments_client_idTousers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_appointments_employee_idTousers users                    @relation("appointments_employee_idTousers", fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  establishments                        establishments           @relation(fields: [establishment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  financial_transactions                financial_transactions[]
+  service_history                       service_history[]
+
+  @@index([client_id], map: "idx_appointments_client_id")
+  @@index([employee_id], map: "idx_appointments_employee_id")
+  @@index([establishment_id], map: "idx_appointments_establishment_id")
+  @@index([scheduled_start], map: "idx_appointments_scheduled_start")
+}
+
+model audit_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?   @db.Uuid
+  action      String    @db.VarChar(255)
+  entity_name String    @db.VarChar(100)
+  entity_id   String?   @db.Uuid
+  details     String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users?    @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_audit_logs_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model employee_availabilities {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employee_id      String         @db.Uuid
+  establishment_id String         @db.Uuid
+  day_of_week      Int
+  start_time       DateTime       @db.Time(6)
+  end_time         DateTime       @db.Time(6)
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  users            users          @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  establishments   establishments @relation(fields: [establishment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model employee_establishments {
+  employee_id      String         @db.Uuid
+  establishment_id String         @db.Uuid
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  users            users          @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  establishments   establishments @relation(fields: [establishment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([employee_id, establishment_id])
+}
+
+model establishments {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  manager_id              String                    @db.Uuid
+  name                    String                    @db.VarChar(255)
+  address                 String
+  document_number         String?                   @db.VarChar(20)
+  is_active               Boolean?                  @default(true)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  appointments            appointments[]
+  employee_availabilities employee_availabilities[]
+  employee_establishments employee_establishments[]
+  users                   users                     @relation(fields: [manager_id], references: [id], onUpdate: NoAction)
+  financial_transactions  financial_transactions[]
+  services                services[]
+
+  @@index([manager_id], map: "idx_establishments_manager_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model financial_transactions {
+  id                                              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishment_id                                String         @db.Uuid
+  appointment_id                                  String?        @db.Uuid
+  client_id                                       String?        @db.Uuid
+  employee_id                                     String?        @db.Uuid
+  type                                            String         @db.VarChar(10)
+  amount                                          Decimal        @db.Decimal(10, 2)
+  description                                     String?
+  created_at                                      DateTime?      @default(now()) @db.Timestamp(6)
+  appointments                                    appointments?  @relation(fields: [appointment_id], references: [id], onUpdate: NoAction)
+  users_financial_transactions_client_idTousers   users?         @relation("financial_transactions_client_idTousers", fields: [client_id], references: [id], onUpdate: NoAction)
+  users_financial_transactions_employee_idTousers users?         @relation("financial_transactions_employee_idTousers", fields: [employee_id], references: [id], onUpdate: NoAction)
+  establishments                                  establishments @relation(fields: [establishment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([establishment_id], map: "idx_financial_transactions_establishment_id")
+}
+
+model service_history {
+  id                                       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointment_id                           String       @db.Uuid
+  client_id                                String       @db.Uuid
+  employee_id                              String       @db.Uuid
+  notes                                    String
+  created_at                               DateTime?    @default(now()) @db.Timestamp(6)
+  appointments                             appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_service_history_client_idTousers   users        @relation("service_history_client_idTousers", fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_service_history_employee_idTousers users        @relation("service_history_employee_idTousers", fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model services {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishment_id     String                 @db.Uuid
+  name                 String                 @db.VarChar(255)
+  description          String?
+  price                Decimal                @db.Decimal(10, 2)
+  duration_minutes     Int
+  is_active            Boolean?               @default(true)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  appointment_services appointment_services[]
+  establishments       establishments         @relation(fields: [establishment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([establishment_id], map: "idx_services_establishment_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                                               String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                                                             String                    @db.VarChar(255)
+  email                                                            String                    @unique @db.VarChar(255)
+  password_hash                                                    String?                   @db.VarChar(255)
+  phone                                                            String?                   @db.VarChar(20)
+  cpf                                                              String?                   @unique @db.VarChar(14)
+  birth_date                                                       DateTime?                 @db.Date
+  role                                                             String                    @db.VarChar(20)
+  communication_consent                                            Boolean?                  @default(false)
+  is_active                                                        Boolean?                  @default(true)
+  created_at                                                       DateTime?                 @default(now()) @db.Timestamp(6)
+  appointments_appointments_client_idTousers                       appointments[]            @relation("appointments_client_idTousers")
+  appointments_appointments_employee_idTousers                     appointments[]            @relation("appointments_employee_idTousers")
+  audit_logs                                                       audit_logs[]
+  employee_availabilities                                          employee_availabilities[]
+  employee_establishments                                          employee_establishments[]
+  establishments                                                   establishments[]
+  financial_transactions_financial_transactions_client_idTousers   financial_transactions[]  @relation("financial_transactions_client_idTousers")
+  financial_transactions_financial_transactions_employee_idTousers financial_transactions[]  @relation("financial_transactions_employee_idTousers")
+  service_history_service_history_client_idTousers                 service_history[]         @relation("service_history_client_idTousers")
+  service_history_service_history_employee_idTousers               service_history[]         @relation("service_history_employee_idTousers")
+
+  @@index([email], map: "idx_users_email")
+}
