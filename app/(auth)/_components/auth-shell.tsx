@@ -11,7 +11,7 @@ type AuthShellProps = {
 
 export function AuthShell({
   children,
-  desktopClassName = "lg:max-w-[32rem]",
+  desktopClassName = "max-w-[32rem]",
   mobileTitle = "Bellatech",
   mobileDescription = "O acesso de gerente, funcionarios e administracao esta liberado somente em notebook ou computador.",
   mobileSecondaryText = "A experiencia mobile fica reservada para clientes acessarem agenda, servicos e produtos.",
@@ -19,7 +19,7 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <section className="relative w-full max-w-6xl">
-      <div className="lg:hidden">
+      <div className="min-[700px]:hidden">
         <div className="mx-auto max-w-md rounded-[2rem] border border-[#efe2df] bg-white p-6 text-center shadow-[0_25px_80px_rgba(120,77,92,0.12)]">
           <BrandLogo maxWidthClassName="max-w-[12rem]" />
           <h1 className="mt-5 font-display text-[2.5rem] leading-none font-semibold text-[#181114]">
@@ -39,7 +39,7 @@ export function AuthShell({
 
       <div
         id="center-auth"
-        className={`hidden lg:mx-auto lg:grid lg:w-full lg:gap-6 ${desktopClassName}`}
+        className={`hidden min-[700px]:mx-auto min-[700px]:grid min-[700px]:w-full min-[700px]:gap-6 ${desktopClassName}`}
       >
         {children}
       </div>

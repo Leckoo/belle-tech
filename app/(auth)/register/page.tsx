@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CreditCard,
+  IdCard,
   Mail,
   MapPinned,
   Phone,
@@ -55,16 +56,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthShell desktopClassName="lg:max-w-[74rem]">
+    <AuthShell desktopClassName="max-w-[74rem]">
       <div className="rounded-[2.5rem] border border-[#efe2df] bg-white p-10 shadow-[0_25px_80px_rgba(120,77,92,0.12)] lg:p-12">
         <div className="flex flex-col items-center text-center">
           <BrandLogo maxWidthClassName="max-w-[13rem]" />
           <span className="mt-6 inline-flex rounded-full border border-[#ead7d7] bg-[#fff8f6] px-4 py-1.5 text-[0.72rem] font-bold uppercase tracking-[0.22em] text-[#9b5d73]">
             Cadastro inicial
           </span>
-          <h1 className="mt-5 font-display text-[3.2rem] leading-none font-semibold text-[#181114]">
-            Cadastro Bellatech
-          </h1>
         </div>
 
         <form className="mt-10 space-y-8">
@@ -93,19 +91,14 @@ export default function RegisterPage() {
                   id="managerCpf"
                   name="managerCpf"
                   label="CPF"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={form.managerCpf}
                   onChange={(event) => updateField("managerCpf", event.target.value)}
                   autoComplete="off"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <CreditCard
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        strokeWidth={1.8}
-                      />
-                    </span>
-                  }
+                  mask="___.___.___-__"
+                  replacement={{ _: /\d/ }}
+                  icon={IdCard}
                 />
                 <FloatingInput
                   id="managerName"
@@ -114,11 +107,7 @@ export default function RegisterPage() {
                   value={form.managerName}
                   onChange={(event) => updateField("managerName", event.target.value)}
                   autoComplete="name"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <UserRound aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
-                    </span>
-                  }
+                  icon={UserRound}
                 />
                 <FloatingInput
                   id="managerEmail"
@@ -128,11 +117,7 @@ export default function RegisterPage() {
                   value={form.managerEmail}
                   onChange={(event) => updateField("managerEmail", event.target.value)}
                   autoComplete="email"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <Mail aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
-                    </span>
-                  }
+                  icon={Mail}
                 />
                 <FloatingInput
                   id="managerPhone"
@@ -141,11 +126,7 @@ export default function RegisterPage() {
                   value={form.managerPhone}
                   onChange={(event) => updateField("managerPhone", event.target.value)}
                   autoComplete="tel"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <Phone aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
-                    </span>
-                  }
+                  icon={Phone}
                 />
                 <FloatingInput
                   id="managerRole"
@@ -154,15 +135,7 @@ export default function RegisterPage() {
                   value={form.managerRole}
                   onChange={(event) => updateField("managerRole", event.target.value)}
                   autoComplete="organization-title"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <BriefcaseBusiness
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        strokeWidth={1.8}
-                      />
-                    </span>
-                  }
+                  icon={BriefcaseBusiness}
                 />
               </div>
             </section>
@@ -196,15 +169,7 @@ export default function RegisterPage() {
                     updateField("establishmentCnpj", event.target.value)
                   }
                   autoComplete="off"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <Building2
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        strokeWidth={1.8}
-                      />
-                    </span>
-                  }
+                  icon={CreditCard}
                 />
                 <FloatingInput
                   id="establishmentLegalName"
@@ -215,15 +180,7 @@ export default function RegisterPage() {
                     updateField("establishmentLegalName", event.target.value)
                   }
                   autoComplete="organization"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <Building2
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        strokeWidth={1.8}
-                      />
-                    </span>
-                  }
+                  icon={Building2}
                 />
                 <FloatingInput
                   id="establishmentTradeName"
@@ -234,11 +191,7 @@ export default function RegisterPage() {
                     updateField("establishmentTradeName", event.target.value)
                   }
                   autoComplete="organization"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <Store aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />
-                    </span>
-                  }
+                  icon={Store}
                 />
                 <FloatingInput
                   id="establishmentAddress"
@@ -249,53 +202,46 @@ export default function RegisterPage() {
                     updateField("establishmentAddress", event.target.value)
                   }
                   autoComplete="street-address"
-                  endSlot={
-                    <span className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[#8f586b] shadow-sm transition-colors duration-200 peer-focus:text-[var(--color-text-rose-accent)]">
-                      <MapPinned
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        strokeWidth={1.8}
-                      />
-                    </span>
-                  }
+                  icon={MapPinned}
                 />
               </div>
             </section>
           </div>
 
-          <div className="flex items-center justify-between rounded-[1.75rem] border border-[#efe3e4] bg-[linear-gradient(90deg,#fff9f7_0%,#fffefd_100%)] px-6 py-5">
-            <div>
-              <p className="text-sm font-semibold text-[#694f59]">
-                Essa etapa prepara o primeiro acesso administrativo.
-              </p>
-              <p className="mt-1 text-sm text-[#867279]">
-                Depois entramos na segunda tela para senha e validacoes finais.
-              </p>
-            </div>
-            <ArrowRight
-              aria-hidden="true"
-              className="h-6 w-6 shrink-0 text-[#9b5d73]"
-              strokeWidth={1.8}
-            />
-          </div>
-
           <div className="flex items-center justify-between gap-4">
             <Link
               href="/login"
-              className="rounded-full border border-[#d9c4cb] bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.16em] text-[#7c5361] shadow-[0_12px_22px_rgba(180,154,164,0.12)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b96982] hover:text-[#6f4453]"
+              className="group relative flex items-center justify-center gap-3 overflow-hidden rounded-full border border-[#d7c0c7] bg-[rgba(255,248,247,0.88)] px-6 py-3.5 text-sm font-bold uppercase tracking-[0.16em] text-[#7b5260] shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_32px_rgba(180,154,164,0.16)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-[#b97a8e] hover:bg-[rgba(255,244,243,0.96)] hover:text-[#6e4152] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_20px_38px_rgba(170,102,126,0.18)] active:scale-[0.99]"
             >
-              Voltar para login
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/90"
+              />
+              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#935a6f] ring-1 ring-[#ead6dd] transition duration-300 group-hover:-translate-x-0.5 group-hover:scale-105">
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4 rotate-180"
+                  strokeWidth={1.8}
+                />
+              </span>
+              <span className="relative">Voltar</span>
             </Link>
             <button
               type="button"
-              className="flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(90deg,#8e4b63_0%,#d97f97_100%)] px-8 py-4 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_rgba(146,76,101,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(146,76,101,0.34)]"
+              className="group relative flex items-center justify-center gap-3 overflow-hidden rounded-full border border-[#b67b8f] bg-[linear-gradient(180deg,rgba(181,107,131,0.96)_0%,rgba(142,75,99,0.98)_100%)] px-8 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.34),0_18px_38px_rgba(142,75,99,0.28)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_24px_44px_rgba(142,75,99,0.34)] active:scale-[0.99] cursor-pointer"
             >
-              Continuar cadastro
-              <ArrowRight
+              <span
                 aria-hidden="true"
-                className="h-4 w-4"
-                strokeWidth={1.8}
+                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/70"
               />
+              <span className="relative">Proximo</span>
+              <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/16 ring-1 ring-white/20 transition duration-300 group-hover:translate-x-0.5 group-hover:scale-105">
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                  strokeWidth={1.8}
+                />
+              </span>
             </button>
           </div>
         </form>
