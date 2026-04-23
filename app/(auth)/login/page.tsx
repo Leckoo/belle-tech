@@ -6,7 +6,6 @@ import { Eye, EyeOff, Mail } from "lucide-react";
 import { AuthShell } from "../_components/auth-shell";
 import { BrandLogo } from "../_components/brand-logo";
 import { FloatingInput } from "../_components/floating-input";
-import InputMask from 'react-input-mask';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
