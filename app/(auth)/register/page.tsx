@@ -123,6 +123,7 @@ type AddressSuggestion = {
   description: string;
   mainText: string;
   secondaryText: string;
+  placePrediction: GooglePlacePrediction;
 };
 
 type LocationSelection = {
@@ -150,24 +151,44 @@ type GoogleMapMouseEvent = {
   };
 };
 
-type GoogleAutocompletePrediction = {
-  place_id: string;
-  description: string;
-  structured_formatting?: {
-    main_text?: string;
-    secondary_text?: string;
-  };
+type GoogleLatLng = {
+  lat: () => number;
+  lng: () => number;
 };
 
-type GooglePlaceDetails = {
-  formatted_address?: string;
-  place_id?: string;
-  geometry?: {
-    location?: {
-      lat: () => number;
-      lng: () => number;
-    };
-  };
+type GoogleFormattableText = {
+  text: string;
+  toString: () => string;
+};
+
+type GooglePlace = {
+  formattedAddress?: string;
+  location?: GoogleLatLng;
+  fetchFields: (request: { fields: string[] }) => Promise<{ place: GooglePlace }>;
+};
+
+type GooglePlacePrediction = {
+  placeId: string;
+  text?: GoogleFormattableText;
+  mainText?: GoogleFormattableText;
+  secondaryText?: GoogleFormattableText;
+  toPlace: () => GooglePlace;
+};
+
+type GoogleAutocompleteSuggestion = {
+  placePrediction?: GooglePlacePrediction;
+};
+
+type GoogleAutocompleteSessionToken = object;
+
+type GoogleAutocompleteRequest = {
+  input: string;
+  includedRegionCodes?: string[];
+  inputOffset?: number;
+  language?: string;
+  origin?: GoogleMapCoordinates;
+  region?: string;
+  sessionToken?: GoogleAutocompleteSessionToken;
 };
 
 type GoogleGeocoderResult = {
@@ -186,36 +207,40 @@ type GoogleMapInstance = {
 };
 
 type GoogleMapMarker = {
-  setPosition: (position: GoogleMapCoordinates) => void;
-  setVisible: (visible: boolean) => void;
+  map: GoogleMapInstance | null;
+  position: GoogleMapCoordinates | GoogleLatLng | null;
+  gmpDraggable?: boolean;
+  title?: string;
   addListener: (
     eventName: string,
     listener: (event: GoogleMapMouseEvent) => void,
   ) => void;
 };
 
-type GoogleAutocompleteService = {
-  getPlacePredictions: (
-    request: {
-      input: string;
-      componentRestrictions?: { country: string };
-      types?: string[];
-    },
-    callback: (
-      predictions: GoogleAutocompletePrediction[] | null,
-      status: string,
-    ) => void,
-  ) => void;
+type GoogleMapsLibrary = {
+  Map: new (
+    element: HTMLElement,
+    options: Record<string, unknown>,
+  ) => GoogleMapInstance;
 };
 
-type GooglePlacesService = {
-  getDetails: (
-    request: {
-      placeId: string;
-      fields: string[];
-    },
-    callback: (place: GooglePlaceDetails | null, status: string) => void,
-  ) => void;
+type GoogleMarkerLibrary = {
+  AdvancedMarkerElement: new (options: Record<string, unknown>) => GoogleMapMarker;
+};
+
+type GooglePlacesLibrary = {
+  AutocompleteSessionToken: new () => GoogleAutocompleteSessionToken;
+  AutocompleteSuggestion: {
+    fetchAutocompleteSuggestions: (
+      request: GoogleAutocompleteRequest,
+    ) => Promise<{ suggestions: GoogleAutocompleteSuggestion[] }>;
+  };
+};
+
+type LoadedGoogleMapsLibraries = {
+  maps: GoogleMapsLibrary;
+  marker: GoogleMarkerLibrary;
+  places: GooglePlacesLibrary;
 };
 
 type GoogleGeocoder = {
@@ -229,18 +254,10 @@ type GoogleGeocoder = {
 };
 
 type GoogleMapsApi = {
-  Map: new (
-    element: HTMLElement,
-    options: Record<string, unknown>,
-  ) => GoogleMapInstance;
-  Marker: new (options: Record<string, unknown>) => GoogleMapMarker;
   Geocoder: new () => GoogleGeocoder;
-  places: {
-    AutocompleteService: new () => GoogleAutocompleteService;
-    PlacesService: new (
-      map: GoogleMapInstance | HTMLElement,
-    ) => GooglePlacesService;
-  };
+  importLibrary: (
+    libraryName: "maps" | "marker" | "places",
+  ) => Promise<unknown>;
 };
 
 const initialForm: RegisterForm = {
@@ -351,15 +368,15 @@ const businessTypeOptions = [
 
 const loadingStages = [
   {
-    title: "Account Created",
+    title: "Conta criada",
     description: "Preparando a estrutura inicial do cadastro.",
   },
   {
-    title: "Verifying Details",
+    title: "Verificando dados",
     description: "Conferindo os dados do negocio e o endereco marcado.",
   },
   {
-    title: "Welcome Aboard",
+    title: "Conta pronta",
     description: "Finalizando a experiencia para a conta ficar pronta.",
   },
 ];
@@ -370,6 +387,8 @@ const defaultMapCenter = {
   lng: -46.633308,
 };
 const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+const googleMapsMapId =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "DEMO_MAP_ID";
 const maskPatterns: Record<MaskType, string> = {
   cpf: "###.###.###-##",
   phone: "(##) #####-####",
@@ -514,6 +533,39 @@ function getGoogleMapsApi() {
   return (window as GoogleMapsWindow).google?.maps ?? null;
 }
 
+function getCoordinatesFromPosition(
+  position: GoogleMapCoordinates | GoogleLatLng | null | undefined,
+) {
+  if (!position) {
+    return null;
+  }
+
+  return {
+    lat: typeof position.lat === "function" ? position.lat() : position.lat,
+    lng: typeof position.lng === "function" ? position.lng() : position.lng,
+  };
+}
+
+function getSuggestionText(text?: GoogleFormattableText) {
+  if (!text) {
+    return "";
+  }
+
+  return text.text || text.toString();
+}
+
+function loadGoogleMapsLibraries(maps: GoogleMapsApi) {
+  return Promise.all([
+    maps.importLibrary("maps") as Promise<GoogleMapsLibrary>,
+    maps.importLibrary("marker") as Promise<GoogleMarkerLibrary>,
+    maps.importLibrary("places") as Promise<GooglePlacesLibrary>,
+  ]).then(([mapsLibrary, markerLibrary, placesLibrary]) => ({
+    maps: mapsLibrary,
+    marker: markerLibrary,
+    places: placesLibrary,
+  }));
+}
+
 export default function RegisterPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
@@ -522,9 +574,13 @@ export default function RegisterPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<GoogleMapInstance | null>(null);
   const mapMarkerRef = useRef<GoogleMapMarker | null>(null);
-  const autocompleteServiceRef = useRef<GoogleAutocompleteService | null>(null);
-  const placesServiceRef = useRef<GooglePlacesService | null>(null);
   const geocoderRef = useRef<GoogleGeocoder | null>(null);
+  const googleLibrariesPromiseRef = useRef<
+    Promise<LoadedGoogleMapsLibraries> | null
+  >(null);
+  const autocompleteSessionTokenRef =
+    useRef<GoogleAutocompleteSessionToken | null>(null);
+  const autocompleteRequestIdRef = useRef(0);
   const submitTimersRef = useRef<number[]>([]);
 
   const [form, setForm] = useState(initialForm);
@@ -586,14 +642,33 @@ export default function RegisterPage() {
     submitTimersRef.current = [];
   }, []);
 
+  const ensureGoogleMapsLibraries = useCallback(async () => {
+    const maps = getGoogleMapsApi();
+
+    if (!maps) {
+      return null;
+    }
+
+    if (!googleLibrariesPromiseRef.current) {
+      googleLibrariesPromiseRef.current = loadGoogleMapsLibraries(maps);
+    }
+
+    try {
+      return await googleLibrariesPromiseRef.current;
+    } catch {
+      setMapsScriptState("error");
+      return null;
+    }
+  }, []);
+
   const moveMarkerTo = useCallback((lat: number, lng: number) => {
     if (!googleMapRef.current || !mapMarkerRef.current) {
       return;
     }
 
     const position = { lat, lng };
-    mapMarkerRef.current.setPosition(position);
-    mapMarkerRef.current.setVisible(true);
+    mapMarkerRef.current.position = position;
+    mapMarkerRef.current.map = googleMapRef.current;
     googleMapRef.current.panTo(position);
     googleMapRef.current.setZoom(
       Math.max(googleMapRef.current.getZoom() ?? 15, 15),
@@ -602,6 +677,8 @@ export default function RegisterPage() {
 
   const applyLocationSelection = useCallback((selection: LocationSelection) => {
     moveMarkerTo(selection.lat, selection.lng);
+    autocompleteSessionTokenRef.current = null;
+    autocompleteRequestIdRef.current += 1;
     setAddressSuggestions([]);
     setIsSearchingAddress(false);
     setLocationError("");
@@ -665,56 +742,80 @@ export default function RegisterPage() {
   }, [clearSubmitTimers]);
 
   useEffect(() => {
-    if (!isGoogleMapsReady || !mapContainerRef.current || googleMapRef.current) {
+    if (
+      currentStep.id !== "location" ||
+      !isGoogleMapsReady ||
+      !mapContainerRef.current ||
+      googleMapRef.current
+    ) {
       return;
     }
 
-    const maps = getGoogleMapsApi();
+    let isCancelled = false;
 
-    if (!maps) {
-      return;
+    async function initializeMap() {
+      const libraries = await ensureGoogleMapsLibraries();
+      const maps = getGoogleMapsApi();
+
+      if (!libraries || !maps || !mapContainerRef.current || isCancelled) {
+        return;
+      }
+
+      const map = new libraries.maps.Map(mapContainerRef.current, {
+        center: defaultMapCenter,
+        zoom: 11,
+        disableDefaultUI: true,
+        zoomControl: true,
+        fullscreenControl: false,
+        streetViewControl: false,
+        mapTypeControl: false,
+        clickableIcons: false,
+        mapId: googleMapsMapId,
+      });
+      const marker = new libraries.marker.AdvancedMarkerElement({
+        map: null,
+        position: null,
+        gmpDraggable: true,
+        title: "Local do estabelecimento",
+      });
+
+      marker.addListener("dragend", () => {
+        const position = getCoordinatesFromPosition(marker.position);
+
+        if (position) {
+          handleMapLocationSelection(position.lat, position.lng);
+        }
+      });
+
+      map.addListener("click", (event: GoogleMapMouseEvent) => {
+        const lat = event.latLng?.lat?.();
+        const lng = event.latLng?.lng?.();
+
+        if (typeof lat === "number" && typeof lng === "number") {
+          handleMapLocationSelection(lat, lng);
+        }
+      });
+
+      if (isCancelled) {
+        return;
+      }
+
+      googleMapRef.current = map;
+      mapMarkerRef.current = marker;
+      geocoderRef.current = new maps.Geocoder();
     }
 
-    const map = new maps.Map(mapContainerRef.current, {
-      center: defaultMapCenter,
-      zoom: 11,
-      disableDefaultUI: true,
-      zoomControl: true,
-      fullscreenControl: false,
-      streetViewControl: false,
-      mapTypeControl: false,
-      clickableIcons: false,
-    });
-    const marker = new maps.Marker({
-      map,
-      draggable: true,
-      visible: false,
-    });
+    void initializeMap();
 
-    marker.addListener("dragend", (event: GoogleMapMouseEvent) => {
-      const lat = event.latLng?.lat?.();
-      const lng = event.latLng?.lng?.();
-
-      if (typeof lat === "number" && typeof lng === "number") {
-        handleMapLocationSelection(lat, lng);
-      }
-    });
-
-    map.addListener("click", (event: GoogleMapMouseEvent) => {
-      const lat = event.latLng?.lat?.();
-      const lng = event.latLng?.lng?.();
-
-      if (typeof lat === "number" && typeof lng === "number") {
-        handleMapLocationSelection(lat, lng);
-      }
-    });
-
-    googleMapRef.current = map;
-    mapMarkerRef.current = marker;
-    geocoderRef.current = new maps.Geocoder();
-    autocompleteServiceRef.current = new maps.places.AutocompleteService();
-    placesServiceRef.current = new maps.places.PlacesService(map);
-  }, [handleMapLocationSelection, isGoogleMapsReady]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    currentStep.id,
+    ensureGoogleMapsLibraries,
+    handleMapLocationSelection,
+    isGoogleMapsReady,
+  ]);
 
   useEffect(() => {
     if (!googleMapRef.current || !mapMarkerRef.current) {
@@ -722,7 +823,8 @@ export default function RegisterPage() {
     }
 
     if (form.selectedLat === null || form.selectedLng === null) {
-      mapMarkerRef.current.setVisible(false);
+      mapMarkerRef.current.map = null;
+      mapMarkerRef.current.position = null;
       googleMapRef.current.panTo(defaultMapCenter);
       googleMapRef.current.setZoom(11);
       return;
@@ -732,44 +834,92 @@ export default function RegisterPage() {
   }, [form.selectedLat, form.selectedLng, moveMarkerTo]);
 
   useEffect(() => {
-    if (!canSearchAddressSuggestions || !autocompleteServiceRef.current) {
+    if (!canSearchAddressSuggestions) {
       return;
     }
 
+    let isCancelled = false;
+    const requestId = ++autocompleteRequestIdRef.current;
     const timeoutId = window.setTimeout(() => {
-      autocompleteServiceRef.current?.getPlacePredictions(
-        {
-          input: form.addressQuery.trim(),
-          componentRestrictions: { country: "br" },
-          types: ["address"],
-        },
-        (predictions: GoogleAutocompletePrediction[] | null, status: string) => {
-          setIsSearchingAddress(false);
+      void (async () => {
+        const libraries = await ensureGoogleMapsLibraries();
+        const input = form.addressQuery.trim();
 
-          if (status !== "OK" || !predictions) {
+        if (!libraries || !input || isCancelled) {
+          if (!isCancelled && requestId === autocompleteRequestIdRef.current) {
             setAddressSuggestions([]);
+            setIsSearchingAddress(false);
+          }
+          return;
+        }
+
+        autocompleteSessionTokenRef.current ??=
+          new libraries.places.AutocompleteSessionToken();
+
+        try {
+          const { suggestions } =
+            await libraries.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
+              {
+                input,
+                includedRegionCodes: ["br"],
+                inputOffset: input.length,
+                language: "pt-BR",
+                region: "br",
+                sessionToken: autocompleteSessionTokenRef.current,
+              },
+            );
+
+          if (isCancelled || requestId !== autocompleteRequestIdRef.current) {
             return;
           }
 
           setAddressSuggestions(
-            predictions.map((prediction) => ({
-              placeId: prediction.place_id,
-              description: prediction.description,
-              mainText:
-                prediction.structured_formatting?.main_text ??
-                prediction.description,
-              secondaryText:
-                prediction.structured_formatting?.secondary_text ?? "",
-            })),
+            suggestions
+              .map((suggestion) => {
+                const placePrediction = suggestion.placePrediction;
+
+                if (!placePrediction) {
+                  return null;
+                }
+
+                const mainText =
+                  getSuggestionText(placePrediction.mainText) ||
+                  getSuggestionText(placePrediction.text);
+                const secondaryText =
+                  getSuggestionText(placePrediction.secondaryText);
+                const description =
+                  [mainText, secondaryText].filter(Boolean).join(", ") ||
+                  getSuggestionText(placePrediction.text);
+
+                return {
+                  placeId: placePrediction.placeId,
+                  description,
+                  mainText: mainText || description,
+                  secondaryText,
+                  placePrediction,
+                };
+              })
+              .filter((suggestion): suggestion is AddressSuggestion =>
+                Boolean(suggestion),
+              ),
           );
-        },
-      );
+        } catch {
+          if (!isCancelled && requestId === autocompleteRequestIdRef.current) {
+            setAddressSuggestions([]);
+          }
+        } finally {
+          if (!isCancelled && requestId === autocompleteRequestIdRef.current) {
+            setIsSearchingAddress(false);
+          }
+        }
+      })();
     }, 260);
 
     return () => {
+      isCancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [canSearchAddressSuggestions, form.addressQuery]);
+  }, [canSearchAddressSuggestions, ensureGoogleMapsLibraries, form.addressQuery]);
 
   function updateField<Key extends RegisterField>(
     key: Key,
@@ -1066,9 +1216,12 @@ export default function RegisterPage() {
   function clearSelectedLocation(nextQuery: string) {
     setLocationError("");
     addressInputRef.current?.setCustomValidity("");
+    autocompleteSessionTokenRef.current = null;
+    autocompleteRequestIdRef.current += 1;
 
     if (mapMarkerRef.current) {
-      mapMarkerRef.current.setVisible(false);
+      mapMarkerRef.current.map = null;
+      mapMarkerRef.current.position = null;
     }
 
     setForm((current) => ({
@@ -1087,48 +1240,41 @@ export default function RegisterPage() {
     clearSelectedLocation(value);
   }
 
-  function selectAddressSuggestion(suggestion: AddressSuggestion) {
-    const placesService = placesServiceRef.current;
-
-    if (!placesService) {
+  async function selectAddressSuggestion(suggestion: AddressSuggestion) {
+    if (!suggestion.placePrediction) {
       return;
     }
 
     setIsResolvingAddress(true);
     setIsSearchingAddress(false);
 
-    placesService.getDetails(
-      {
+    try {
+      const place = suggestion.placePrediction.toPlace();
+      await place.fetchFields({
+        fields: ["formattedAddress", "location"],
+      });
+
+      const location = getCoordinatesFromPosition(place.location);
+
+      if (!location) {
+        throw new Error("missing-location");
+      }
+
+      applyLocationSelection({
+        address: place.formattedAddress ?? suggestion.description,
         placeId: suggestion.placeId,
-        fields: ["formatted_address", "geometry", "place_id"],
-      },
-      (place: GooglePlaceDetails | null, status: string) => {
-        setIsResolvingAddress(false);
-
-        const location = place?.geometry?.location;
-
-        if (
-          status !== "OK" ||
-          !location ||
-          typeof location.lat !== "function" ||
-          typeof location.lng !== "function"
-        ) {
-          const message = "Nao foi possivel carregar esse endereco.";
-          setLocationError(message);
-          if (addressInputRef.current) {
-            addressInputRef.current.setCustomValidity(message);
-          }
-          return;
-        }
-
-        applyLocationSelection({
-          address: place.formatted_address ?? suggestion.description,
-          placeId: place.place_id ?? suggestion.placeId,
-          lat: location.lat(),
-          lng: location.lng(),
-        });
-      },
-    );
+        lat: location.lat,
+        lng: location.lng,
+      });
+    } catch {
+      const message = "Nao foi possivel carregar esse endereco.";
+      setLocationError(message);
+      if (addressInputRef.current) {
+        addressInputRef.current.setCustomValidity(message);
+      }
+    } finally {
+      setIsResolvingAddress(false);
+    }
   }
 
   function resetRegisterFlow() {
@@ -1147,9 +1293,12 @@ export default function RegisterPage() {
     setIsResolvingAddress(false);
     setLocationError("");
     addressInputRef.current?.setCustomValidity("");
+    autocompleteSessionTokenRef.current = null;
+    autocompleteRequestIdRef.current += 1;
 
     if (mapMarkerRef.current) {
-      mapMarkerRef.current.setVisible(false);
+      mapMarkerRef.current.map = null;
+      mapMarkerRef.current.position = null;
     }
 
     if (googleMapRef.current) {
@@ -1250,7 +1399,7 @@ export default function RegisterPage() {
           <FloatingInput
             id="establishmentPublicName"
             name="establishmentPublicName"
-            label="Nome que aparece para clientes"
+            label="Nome da sua empresa ou estabelecimento"
             value={form.establishmentPublicName}
             onChange={(event) =>
               updateField(
@@ -1283,7 +1432,7 @@ export default function RegisterPage() {
           <FloatingInput
             id="teamSize"
             name="teamSize"
-            label="Tamanho da equipe"
+            label="Tamanho da equipe (contando você)"
             value={form.teamSize}
             onChange={(event) =>
               updateField("teamSize", event.target.value, event.currentTarget)
@@ -1614,7 +1763,7 @@ export default function RegisterPage() {
       {hasGoogleMapsKey ? (
         <Script
           id="google-maps-script"
-          src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&language=pt-BR&region=BR&v=weekly`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&loading=async&language=pt-BR&region=BR&v=weekly`}
           strategy="afterInteractive"
           onLoad={() => setMapsScriptState("ready")}
           onError={() => setMapsScriptState("error")}
@@ -2043,7 +2192,7 @@ function RegisterLoadingOverlay({ loadingStep }: { loadingStep: number }) {
                             isActive
                               ? "bg-white/12 text-white"
                               : isCompleted
-                                ? "bg-[#1d7d4d] text-white"
+                                ? "bg-[#8e4b63] text-white"
                                 : "bg-white/10 text-white/60"
                           }`}
                         />
@@ -2066,7 +2215,7 @@ function RegisterLoadingOverlay({ loadingStep }: { loadingStep: number }) {
                       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/12">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            isActive || isCompleted ? "bg-[#28d476]" : "bg-transparent"
+                            isActive || isCompleted ? "bg-[#b56b83]" : "bg-transparent"
                           }`}
                           style={{
                             width: isCompleted ? "100%" : isActive ? "82%" : "0%",

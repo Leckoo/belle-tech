@@ -87,6 +87,14 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --color-destructive-foreground: var(--destructive-foreground);
+  @keyframes b {
+  100% {
+    background-position: 50% 0,
+      60% 50%;
+
+    }
+
+  }
 }
 
 html {
