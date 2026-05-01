@@ -89,7 +89,7 @@ export default function LoginPage() {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-6 top-0 h-px bg-white/70"
               />
-              <span className="relative">Entrar</span>
+              <span className="relative">Entrar ka</span>
             </button>
 
             <button
